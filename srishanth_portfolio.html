@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>G. Srishanth — Player Profile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0a0c10;
+    --panel: #12161d;
+    --panel-line: #232a35;
+    --gold: #e8a33d;
+    --cyan: #3ddce8;
+    --text: #e7e9ec;
+    --muted: #8b93a1;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Rajdhani', sans-serif;
+    font-weight:500;
+    overflow-x:hidden;
+  }
+  h1,h2,h3, .display{
+    font-family:'Chakra Petch', sans-serif;
+    letter-spacing:0.02em;
+  }
+  #bg-canvas{
+    position:fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    z-index:0;
+    pointer-events:none;
+  }
+  .vignette{
+    position:fixed; inset:0;
+    background: radial-gradient(ellipse at center, transparent 35%, rgba(10,12,16,0.85) 100%);
+    z-index:1;
+    pointer-events:none;
+  }
+  .content{ position:relative; z-index:2; }
+
+  /* ===== HUD top bar ===== */
+  .hud-bar{
+    position:fixed; top:0; left:0; right:0;
+    display:flex; justify-content:space-between; align-items:center;
+    padding:18px 5vw;
+    z-index:10;
+    background:linear-gradient(to bottom, rgba(10,12,16,0.9), transparent);
+  }
+  .hud-tag{
+    font-size:0.85rem;
+    letter-spacing:0.18em;
+    color:var(--gold);
+    text-transform:uppercase;
+  }
+  .hud-nav{ display:flex; gap:28px; }
+  .hud-nav a{
+    color:var(--muted);
+    text-decoration:none;
+    font-size:0.95rem;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    transition:color .2s;
+  }
+  .hud-nav a:hover{ color:var(--cyan); }
+
+  /* ===== Hero ===== */
+  .hero{
+    min-height:100vh;
+    display:flex; flex-direction:column; justify-content:center;
+    padding:0 6vw;
+    position:relative;
+  }
+  .level-chip{
+    display:inline-flex; align-items:center; gap:10px;
+    border:1px solid var(--panel-line);
+    background:rgba(18,22,29,0.7);
+    padding:6px 14px;
+    width:fit-content;
+    font-size:0.85rem;
+    color:var(--cyan);
+    letter-spacing:0.12em;
+    margin-bottom:22px;
+  }
+  .level-chip::before{
+    content:'';
+    width:8px; height:8px;
+    background:var(--cyan);
+    box-shadow:0 0 8px var(--cyan);
+    display:inline-block;
+  }
+  .hero h1{
+    font-size:clamp(2.6rem, 8vw, 5.4rem);
+    line-height:1.02;
+    color:var(--text);
+    text-shadow: 0 0 30px rgba(232,163,61,0.15);
+  }
+  .hero .class-line{
+    margin-top:14px;
+    font-size:clamp(1.05rem, 2.2vw, 1.4rem);
+    color:var(--gold);
+    font-weight:600;
+  }
+  .hero .loc-line{
+    margin-top:6px;
+    color:var(--muted);
+    font-size:1rem;
+  }
+  .hero-ctas{
+    margin-top:38px;
+    display:flex; gap:16px; flex-wrap:wrap;
+  }
+  .btn{
+    font-family:'Chakra Petch', sans-serif;
+    font-size:0.95rem;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    text-decoration:none;
+    padding:14px 26px;
+    border:1px solid var(--gold);
+    color:var(--gold);
+    background:transparent;
+    transition:all .2s ease;
+  }
+  .btn:hover{ background:var(--gold); color:#0a0c10; }
+  .btn.ghost{ border-color:var(--panel-line); color:var(--muted); }
+  .btn.ghost:hover{ border-color:var(--cyan); color:var(--cyan); background:transparent; }
+
+  /* ===== Section shell ===== */
+  section{ padding:90px 6vw; position:relative; }
+  .sec-head{ margin-bottom:44px; }
+  .sec-num{
+    color:var(--muted);
+    font-size:0.85rem;
+    letter-spacing:0.15em;
+  }
+  .sec-head h2{
+    font-size:clamp(1.6rem, 3.4vw, 2.4rem);
+    margin-top:6px;
+  }
+  .sec-head .bar{
+    width:64px; height:3px;
+    background:var(--gold);
+    margin-top:14px;
+  }
+
+  /* ===== Stats (skills) ===== */
+  .stats-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(220px,1fr));
+    gap:18px;
+  }
+  .stat-card{
+    border:1px solid var(--panel-line);
+    background:rgba(18,22,29,0.6);
+    padding:22px;
+  }
+  .stat-card h3{
+    font-size:1.1rem;
+    color:var(--text);
+    margin-bottom:10px;
+  }
+  .stat-tags{ display:flex; flex-wrap:wrap; gap:8px; }
+  .stat-tag{
+    font-size:0.85rem;
+    padding:5px 12px;
+    border:1px solid var(--cyan);
+    color:var(--cyan);
+    letter-spacing:0.04em;
+  }
+
+  /* ===== Quest log (projects) ===== */
+  .quest{
+    border:1px solid var(--panel-line);
+    background:rgba(18,22,29,0.6);
+    padding:30px;
+    margin-bottom:22px;
+    position:relative;
+  }
+  .quest::before{
+    content:'ACTIVE QUEST';
+    position:absolute; top:-11px; left:24px;
+    background:var(--bg);
+    padding:0 10px;
+    font-size:0.75rem;
+    letter-spacing:0.14em;
+    color:var(--gold);
+  }
+  .quest h3{ font-size:1.4rem; margin-bottom:6px; }
+  .quest .tech{ color:var(--cyan); font-size:0.9rem; margin-bottom:16px; letter-spacing:0.04em; }
+  .quest ul{ list-style:none; }
+  .quest li{
+    position:relative;
+    padding-left:24px;
+    margin-bottom:10px;
+    color:var(--muted);
+    font-size:1rem;
+  }
+  .quest li::before{
+    content:'▸';
+    position:absolute; left:0;
+    color:var(--gold);
+  }
+
+  /* ===== Achievements ===== */
+  .ach-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(240px,1fr));
+    gap:18px;
+  }
+  .ach-card{
+    border:1px solid var(--panel-line);
+    background:rgba(18,22,29,0.6);
+    padding:24px;
+    display:flex; gap:16px; align-items:flex-start;
+  }
+  .ach-icon{
+    width:42px; height:42px;
+    flex-shrink:0;
+    border:1px solid var(--gold);
+    display:flex; align-items:center; justify-content:center;
+    color:var(--gold);
+    font-family:'Chakra Petch', sans-serif;
+    font-size:1.1rem;
+  }
+  .ach-card h4{ font-size:1.05rem; margin-bottom:4px; }
+  .ach-card p{ color:var(--muted); font-size:0.9rem; }
+
+  /* ===== Progression path (education) ===== */
+  .path{
+    position:relative;
+    padding-left:30px;
+    border-left:2px solid var(--panel-line);
+  }
+  .path-node{ position:relative; padding-bottom:38px; }
+  .path-node:last-child{ padding-bottom:0; }
+  .path-node::before{
+    content:'';
+    position:absolute; left:-37px; top:2px;
+    width:14px; height:14px;
+    background:var(--bg);
+    border:2px solid var(--gold);
+    border-radius:50%;
+  }
+  .path-node.current::before{
+    background:var(--gold);
+    box-shadow:0 0 12px var(--gold);
+  }
+  .path-node .tag{ font-size:0.8rem; color:var(--muted); letter-spacing:0.1em; }
+  .path-node h4{ font-size:1.15rem; margin:4px 0 2px; }
+  .path-node p{ color:var(--muted); font-size:0.95rem; }
+
+  /* ===== Contact ===== */
+  .contact-box{
+    border:1px solid var(--panel-line);
+    background:rgba(18,22,29,0.6);
+    padding:40px;
+    text-align:center;
+  }
+  .contact-box h2{ font-size:1.8rem; margin-bottom:14px; }
+  .contact-box p{ color:var(--muted); margin-bottom:26px; }
+  .contact-links{ display:flex; gap:18px; justify-content:center; flex-wrap:wrap; }
+  .contact-links a{ color:var(--cyan); text-decoration:none; font-size:1rem; }
+  .contact-links a:hover{ text-decoration:underline; }
+
+  footer{
+    text-align:center;
+    padding:30px;
+    color:var(--muted);
+    font-size:0.85rem;
+    border-top:1px solid var(--panel-line);
+  }
+
+  @media (max-width:640px){
+    .hud-nav{ display:none; }
+    section{ padding:64px 6vw; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<div class="vignette"></div>
+
+<div class="content">
+  <div class="hud-bar">
+    <div class="hud-tag">Player · G. Srishanth</div>
+    <nav class="hud-nav">
+      <a href="#stats">Stats</a>
+      <a href="#quests">Quests</a>
+      <a href="#achievements">Achievements</a>
+      <a href="#progression">Progression</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </div>
+
+  <section class="hero">
+    <div class="level-chip">LEVEL 3 · B.TECH CSE</div>
+    <h1>G. SRISHANTH</h1>
+    <div class="class-line">Class: AI & Software Developer</div>
+    <div class="loc-line">Gannavaram, Andhra Pradesh</div>
+    <div class="hero-ctas">
+      <a href="#quests" class="btn">View Quest Log</a>
+      <a href="#contact" class="btn ghost">Contact</a>
+    </div>
+  </section>
+
+  <section id="stats">
+    <div class="sec-head">
+      <div class="sec-num">01 — CHARACTER SHEET</div>
+      <h2>Stats</h2>
+      <div class="bar"></div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h3>Programming Languages</h3>
+        <div class="stat-tags">
+          <span class="stat-tag">Java</span>
+          <span class="stat-tag">Python</span>
+          <span class="stat-tag">C</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <h3>Focus Areas</h3>
+        <div class="stat-tags">
+          <span class="stat-tag">Artificial Intelligence</span>
+          <span class="stat-tag">Software Development</span>
+          <span class="stat-tag">Chatbots</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="quests">
+    <div class="sec-head">
+      <div class="sec-num">02 — MISSIONS</div>
+      <h2>Quest Log</h2>
+      <div class="bar"></div>
+    </div>
+    <div class="quest">
+      <h3>Tourism AI Chatbot</h3>
+      <div class="tech">Python · AI · Chatbot Development</div>
+      <ul>
+        <li>Developed an AI-powered chatbot to assist users with tourism-related queries and recommendations.</li>
+        <li>Applied programming and AI concepts to build an interactive, user-facing application.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="achievements">
+    <div class="sec-head">
+      <div class="sec-num">03 — TROPHY CASE</div>
+      <h2>Achievements</h2>
+      <div class="bar"></div>
+    </div>
+    <div class="ach-grid">
+      <div class="ach-card">
+        <div class="ach-icon">C</div>
+        <div>
+          <h4>C Programming Certification</h4>
+          <p>IIT Bombay</p>
+        </div>
+      </div>
+      <div class="ach-card">
+        <div class="ach-icon">H</div>
+        <div>
+          <h4>Hedra Certification</h4>
+          <p>Completed</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="progression">
+    <div class="sec-head">
+      <div class="sec-num">04 — PROGRESSION</div>
+      <h2>Education Path</h2>
+      <div class="bar"></div>
+    </div>
+    <div class="path">
+      <div class="path-node">
+        <div class="tag">SSC</div>
+        <h4>Ravindra Bharathi Public School</h4>
+        <p>Marks: 431</p>
+      </div>
+      <div class="path-node">
+        <div class="tag">INTERMEDIATE</div>
+        <h4>Sri Chaitanya Junior College</h4>
+        <p>Marks: 831</p>
+      </div>
+      <div class="path-node current">
+        <div class="tag">2024 – 2028 · IN PROGRESS</div>
+        <h4>B.Tech, Computer Science & Engineering</h4>
+        <p>Dhanekula Institute of Engineering and Technology — Pursuing 3rd Year</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact">
+    <div class="contact-box">
+      <h2>Send a Message</h2>
+      <p>Open to internships, projects, and learning opportunities.</p>
+      <div class="contact-links">
+        <a href="tel:8143911858">8143911858</a>
+        <a href="mailto:vsksrishanthvsk@gmail.com">vsksrishanthvsk@gmail.com</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>G. Srishanth — Player Profile</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+  const canvas = document.getElementById('bg-canvas');
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha:true, antialias:true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(55, window.innerWidth/window.innerHeight, 0.1, 100);
+  camera.position.z = 7;
+
+  // central wireframe polyhedron
+  const geo = new THREE.IcosahedronGeometry(2.6, 1);
+  const mat = new THREE.MeshBasicMaterial({ color: 0xe8a33d, wireframe:true, transparent:true, opacity:0.35 });
+  const mesh = new THREE.Mesh(geo, mat);
+  scene.add(mesh);
+
+  const geo2 = new THREE.IcosahedronGeometry(2.9, 1);
+  const mat2 = new THREE.MeshBasicMaterial({ color: 0x3ddce8, wireframe:true, transparent:true, opacity:0.12 });
+  const mesh2 = new THREE.Mesh(geo2, mat2);
+  scene.add(mesh2);
+
+  // particle field
+  const starCount = 500;
+  const starGeo = new THREE.BufferGeometry();
+  const positions = new Float32Array(starCount * 3);
+  for(let i=0;i<starCount;i++){
+    positions[i*3] = (Math.random()-0.5)*30;
+    positions[i*3+1] = (Math.random()-0.5)*30;
+    positions[i*3+2] = (Math.random()-0.5)*30;
+  }
+  starGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const starMat = new THREE.PointsMaterial({ color:0x8b93a1, size:0.03, transparent:true, opacity:0.6 });
+  const stars = new THREE.Points(starGeo, starMat);
+  scene.add(stars);
+
+  let mouseX = 0, mouseY = 0;
+  window.addEventListener('mousemove', (e) => {
+    mouseX = (e.clientX / window.innerWidth - 0.5);
+    mouseY = (e.clientY / window.innerHeight - 0.5);
+  });
+
+  function animate(){
+    requestAnimationFrame(animate);
+    mesh.rotation.x += 0.0016;
+    mesh.rotation.y += 0.0022;
+    mesh2.rotation.x -= 0.001;
+    mesh2.rotation.y -= 0.0014;
+    stars.rotation.y += 0.0002;
+
+    camera.position.x += (mouseX*1.2 - camera.position.x) * 0.02;
+    camera.position.y += (-mouseY*1.2 - camera.position.y) * 0.02;
+    camera.lookAt(scene.position);
+
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+</script>
+
+</body>
+</html>
